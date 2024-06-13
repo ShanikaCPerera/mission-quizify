@@ -41,13 +41,10 @@ class DocumentProcessor:
         ```
         """
         
-        # Step 1: Render a file uploader widget. Replace 'None' with the Streamlit file uploader code.
-        uploaded_files = st.file_uploader(
-            #####################################
-            # Allow only type `pdf`
-            # Allow multiple PDFs for ingestion
-            #####################################
-        )
+        # STEP 1: Render a file uploader widget.
+        # Allow only type `pdf`
+        # Allow multiple PDFs for ingestion
+        uploaded_files = st.file_uploader("Upload the pdf files", type=['pdf'], accept_multiple_files=True)
         
         if uploaded_files is not None:
             for uploaded_file in uploaded_files:
@@ -61,14 +58,17 @@ class DocumentProcessor:
                 with open(temp_file_path, 'wb') as f:
                     f.write(uploaded_file.getvalue())
 
-                # Step 2: Process the temporary file
+                # STEP 2: Process the temporary file
                 #####################################
-                # Use PyPDFLoader here to load the PDF and extract pages.
+                # Use PyPDFLoader to load the PDF and extract pages.
                 # https://python.langchain.com/docs/modules/data_connection/document_loaders/pdf#using-pypdf
-                # You will need to figure out how to use PyPDFLoader to process the temporary file.
+                loader = PyPDFLoader(temp_file_path)
+                pages = loader.load_and_split()
+                #pg_no=1
+                #print(f"Content:\n {pages[pg_no].page_content} \n metadata:\n {pages[pg_no].metadasta}")
                 
-                # Step 3: Then, Add the extracted pages to the 'pages' list.
-                #####################################
+                # STEP 3: Add the extracted pages to the 'pages' list.
+                self.pages.extend(pages)
                 
                 # Clean up by deleting the temporary file.
                 os.unlink(temp_file_path)
