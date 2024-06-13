@@ -1,0 +1,12 @@
+cd C:\Users\user\RadicalAIWorkspace
+python -m streamlit run gemini_explorer.py
+in gcloud CLI -> default authentication configuration -> gcloud auth application-default login 
+
+-----------------------------------------------------------------------------------------------------
+
+git clone https://github.com/radicalxdev/mission-quizify    
+cd C:\Users\user\RadicalAIWorkspace\MissionQuizify\mission-quizify
+python -m venv env  
+.\env\Scripts\activate 
+pip install -r requirements.txt
+set "GOOGLE_APPLICATION_CREDENTIALS = authentication.json"
