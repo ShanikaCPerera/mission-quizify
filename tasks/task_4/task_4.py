@@ -7,9 +7,8 @@ class EmbeddingClient:
     """
     Task: Initialize the EmbeddingClient class to connect to Google Cloud's VertexAI for text embeddings.
 
-    The EmbeddingClient class should be capable of initializing an embedding client with specific configurations
-    for model name, project, and location. Your task is to implement the __init__ method based on the provided
-    parameters. This setup will allow the class to utilize Google Cloud's VertexAIEmbeddings for processing text queries.
+    The EmbeddingClient class is capable of initializing an embedding client with specific configurations
+    for model name, project, and location. This setup will allow the class to utilize Google Cloud's VertexAIEmbeddings for processing text queries.
 
     Steps:
     1. Implement the __init__ method to accept 'model_name', 'project', and 'location' parameters.
