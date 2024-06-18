@@ -21,10 +21,6 @@ class ChromaCollectionCreator:
         self.processor = processor      # This will hold the DocumentProcessor from Task 3
         self.embed_model = embed_model  # This will hold the EmbeddingClient from Task 4
         self.db = None                  # This will hold the Chroma collection
-
-    # Define the custom length function
-    def custom_length_function(text):
-        return len(text)
     
     def create_chroma_collection(self):
         """
@@ -107,6 +103,13 @@ class ChromaCollectionCreator:
                 st.error("No matching documents found!", icon="🚨")
         else:
             st.error("Chroma Collection has not been created!", icon="🚨")
+
+    def as_retriever(self):
+        """
+        Returns the created Chroma collection as a retriever of type VectorStoreRetriever()
+        Note: Sets default retriever for search type and kwargs
+        """
+        return self.db.as_retriever()
 
 if __name__ == "__main__":
     processor = DocumentProcessor() # Initialize from Task 3

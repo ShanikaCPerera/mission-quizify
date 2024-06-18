@@ -8,8 +8,10 @@ sys.path.append(os.path.abspath('../../'))
 class QuizGenerator:
     def __init__(self, topic=None, num_questions=1, vectorstore=None):
         """
-        Initializes the QuizGenerator with a required topic, the number of questions for the quiz,
-        and an optional vectorstore for querying related information.
+        Initializes the QuizGenerator with 
+            -a required topic, 
+            -the number of questions for the quiz,
+            -and an optional vectorstore for querying related information.
 
         :param topic: A string representing the required topic of the quiz.
         :param num_questions: An integer representing the number of questions to generate for the quiz, up to a maximum of 10.
@@ -26,6 +28,7 @@ class QuizGenerator:
 
         self.vectorstore = vectorstore
         self.llm = None
+        # giving instructions for the LLM
         self.system_template = """
             You are a subject matter expert on the topic: {topic}
             
@@ -56,7 +59,8 @@ class QuizGenerator:
         Task: Initialize the Large Language Model (LLM) for quiz question generation.
 
         Overview:
-        This method prepares the LLM for generating quiz questions by configuring essential parameters such as the model name, temperature, and maximum output tokens. The LLM will be used later to generate quiz questions based on the provided topic and context retrieved from the vectorstore.
+        This method prepares the LLM for generating quiz questions by configuring essential parameters such as the model name, temperature, and maximum output tokens. 
+        The LLM will be used later to generate quiz questions based on the provided topic and context retrieved from the vectorstore.
 
         Steps:
         1. Set the LLM's model name to "gemini-pro" 
@@ -70,9 +74,12 @@ class QuizGenerator:
 
         Note: Ensure you have appropriate access or API keys if required by the model or platform.
         """
+        # Initialize the LLM - Gemini
         self.llm = VertexAI(
-            ############# YOUR CODE HERE ############
-        )
+            model_name="gemini-pro", 
+            temperature=0.4, 
+            max_output_tokens=400
+            )
         
     def generate_question_with_vectorstore(self):
         """
@@ -99,22 +106,24 @@ class QuizGenerator:
 
         Note: Handle cases where the vectorstore is not provided by raising a ValueError.
         """
-        ############# YOUR CODE HERE ############
+
         # Initialize the LLM from the 'init_llm' method if not already initialized
         # Raise an error if the vectorstore is not initialized on the class
-        ############# YOUR CODE HERE ############
+        if self.llm is None:
+            self.init_llm()
+
+        if self.vectorstore is None:
+            st.error("Vectorstore is not initialized!", icon="🚨")   
         
         from langchain_core.runnables import RunnablePassthrough, RunnableParallel
 
-        ############# YOUR CODE HERE ############
         # Enable a Retriever using the as_retriever() method on the VectorStore object
         # HINT: Use the vectorstore as the retriever initialized on the class
-        ############# YOUR CODE HERE ############
+        retriever = self.vectorstore.as_retriever() # or use self.vectorstore.db.as_retriever()
         
-        ############# YOUR CODE HERE ############
         # Use the system template to create a PromptTemplate
         # HINT: Use the .from_template method on the PromptTemplate class and pass in the system template
-        ############# YOUR CODE HERE ############
+        prompt = PromptTemplate.from_template(self.system_template)
         
         # RunnableParallel allows Retriever to get relevant documents
         # RunnablePassthrough allows chain.invoke to send self.topic to LLM
@@ -122,10 +131,9 @@ class QuizGenerator:
             {"context": retriever, "topic": RunnablePassthrough()}
         )
         
-        ############# YOUR CODE HERE ############
         # Create a chain with the Retriever, PromptTemplate, and LLM
         # HINT: chain = RETRIEVER | PROMPT | LLM 
-        ############# YOUR CODE HERE ############
+        chain = setup_and_retrieval | prompt | self.llm
 
         # Invoke the chain with the topic as input
         response = chain.invoke(self.topic)
@@ -141,7 +149,7 @@ if __name__ == "__main__":
     
     embed_config = {
         "model_name": "textembedding-gecko@003",
-        "project": "YOUR-PROJECT-ID-HERE",
+        "project": "platinum-tube-425318-d5",
         "location": "us-central1"
     }
     
