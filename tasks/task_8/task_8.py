@@ -10,6 +10,38 @@ from tasks.task_5.task_5 import ChromaCollectionCreator
 from langchain_core.prompts import PromptTemplate
 from langchain_google_vertexai import VertexAI
 
+from langchain_core.output_parsers import JsonOutputParser
+from pydantic import BaseModel, Field
+from typing import List
+
+class Choice(BaseModel):
+    key: str = Field(description="The key for the choice, should be one of 'A', 'B', 'C', or 'D'.")
+    value: str = Field(description="The text of the choice.")
+
+class QuestionSchema(BaseModel):
+    question: str = Field(description="The text of the question.")
+    choices: List[Choice] = Field(description="A list of choices for the question, each with a key and a value.")
+    answer: str = Field(description="The key of the correct answer from the choices list.")
+    explanation: str = Field(description="An explanation as to why the answer is correct.")
+
+    model_config = {
+        "json_schema_extra": {
+            "examples": """ 
+                {
+                "question": "What is the capital of France?",
+                "choices": [
+                    {"key": "A", "value": "Berlin"},
+                    {"key": "B", "value": "Madrid"},
+                    {"key": "C", "value": "Paris"},
+                    {"key": "D", "value": "Rome"}
+                ],
+                "answer": "C",
+                "explanation": "Paris is the capital of France."
+              }
+          """
+        }
+      }
+
 class QuizGenerator:
     def __init__(self, topic=None, num_questions=1, vectorstore=None):
         """
@@ -31,6 +63,7 @@ class QuizGenerator:
 
         self.vectorstore = vectorstore
         self.llm = None
+        self.json_parser = JsonOutputParser(pydantic_object=QuestionSchema)
         self.question_bank = [] # Initialize the question bank to store questions
         self.system_template = """
             You are a subject matter expert on the topic: {topic}
@@ -41,18 +74,7 @@ class QuizGenerator:
             3. Provide the correct answer for the question from the list of answers as key "answer"
             4. Provide an explanation as to why the answer is correct as key "explanation"
             
-            You must respond as a JSON object with the following structure:
-            {{
-                "question": "<question>",
-                "choices": [
-                    {{"key": "A", "value": "<choice>"}},
-                    {{"key": "B", "value": "<choice>"}},
-                    {{"key": "C", "value": "<choice>"}},
-                    {{"key": "D", "value": "<choice>"}}
-                ],
-                "answer": "<answer key from choices list>",
-                "explanation": "<explanation as to why the answer is correct>"
-            }}
+            {format_instructions}
             
             Context: {context}
             """
@@ -80,6 +102,7 @@ class QuizGenerator:
         """
         if not self.llm:
             self.init_llm()
+
         if not self.vectorstore:
             raise ValueError("Vectorstore not provided.")
         
@@ -89,15 +112,21 @@ class QuizGenerator:
         retriever = self.vectorstore.as_retriever()
         
         # Use the system template to create a PromptTemplate
-        prompt = PromptTemplate.from_template(self.system_template)
+        #prompt = PromptTemplate.from_template(self.system_template)
+        prompt = PromptTemplate(
+            template=self.system_template,
+            input_variables=["topic", "context"],
+            partial_variables={"format_instructions": self.json_parser.get_format_instructions()},
+        )
         
         # RunnableParallel allows Retriever to get relevant documents
         # RunnablePassthrough allows chain.invoke to send self.topic to LLM
         setup_and_retrieval = RunnableParallel(
             {"context": retriever, "topic": RunnablePassthrough()}
         )
+
         # Create a chain with the Retriever, PromptTemplate, and LLM
-        chain = setup_and_retrieval | prompt | self.llm 
+        chain = setup_and_retrieval | prompt | self.llm | self.json_parser
 
         # Invoke the chain with the topic as input
         response = chain.invoke(self.topic)
@@ -124,25 +153,42 @@ class QuizGenerator:
         self.question_bank = [] # Reset the question bank
 
         for _ in range(self.num_questions):
-            ##### YOUR CODE HERE #####
-            question_str = # Use class method to generate question
-            
-            ##### YOUR CODE HERE #####
-            try:
-                # Convert the JSON String to a dictionary
-            except json.JSONDecodeError:
-                print("Failed to decode question JSON.")
-                continue  # Skip this iteration if JSON decoding fails
-            ##### YOUR CODE HERE #####
+            print(f"------Round {_} to generate a question-------")
+            question = self.generate_question_with_vectorstore()
+            print(question)
 
-            ##### YOUR CODE HERE #####
+            #try:
+            #    question = json.loads(question_str)
+            #except json.JSONDecodeError:
+            #    print("Failed to decode question JSON.")
+            #    continue  # Skip this iteration if JSON decoding fails
+
             # Validate the question using the validate_question method
             if self.validate_question(question):
                 print("Successfully generated unique question")
                 # Add the valid and unique question to the bank
+                self.question_bank.append(question)
             else:
                 print("Duplicate or invalid question detected.")
-            ##### YOUR CODE HERE #####
+                #lets try 3 attempts to get a unique question
+                for i in range(3):
+                    question_str = self.generate_question_with_vectorstore()
+
+                    try:
+                        question = json.loads(question_str)
+                    except json.JSONDecodeError:
+                        print("Failed to decode question JSON.")
+                        continue
+
+                    # Validate the question using the validate_question method
+                    if self.validate_question(question):
+                        print("Successfully generated unique question")
+                        # Add the valid and unique question to the bank
+                        self.question_bank.append(question)
+                        break
+                    else:
+                        print("Again duplicate or invalid question detected.")
+                        continue
 
         return self.question_bank
 
@@ -166,10 +212,19 @@ class QuizGenerator:
 
         Note: This method assumes `question` is a valid dictionary and `question_bank` has been properly initialized.
         """
-        ##### YOUR CODE HERE #####
+
         # Consider missing 'question' key as invalid in the dict object
+        if 'question' not in question or not question['question']:
+            raise ValueError("The dictionary object must contain a non-empty 'question' key")
+        
+        is_unique = True
+
         # Check if a question with the same text already exists in the self.question_bank
-        ##### YOUR CODE HERE #####
+        for ques_dict in self.question_bank:
+            if ques_dict["question"] == question["question"]:
+                    is_unique = False
+                    break
+
         return is_unique
 
 
@@ -178,7 +233,7 @@ if __name__ == "__main__":
     
     embed_config = {
         "model_name": "textembedding-gecko@003",
-        "project": "YOUR-PROJECT-ID-HERE",
+        "project": "platinum-tube-425318-d5",
         "location": "us-central1"
     }
     
