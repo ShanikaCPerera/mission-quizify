@@ -68,10 +68,9 @@ class QuizManager:
         """
         ##### YOUR CODE HERE #####
         current_index = st.session_state["question_index"]
-        new_index = new_index + direction
+        new_index = current_index + direction
         new_index = new_index % self.total_questions
-        if st.session_state["question_index"] is not None:
-            st.session_state["question_index"] = new_index
+        st.session_state["question_index"] = new_index
         #pass  # Placeholder for implementation
     ##########################################################
 
