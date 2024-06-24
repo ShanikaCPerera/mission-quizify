@@ -212,7 +212,7 @@ class QuizGenerator:
 
         Note: This method assumes `question` is a valid dictionary and `question_bank` has been properly initialized.
         """
-
+        print(question)
         # Consider missing 'question' key as invalid in the dict object
         if 'question' not in question or not question['question']:
             raise ValueError("The dictionary object must contain a non-empty 'question' key")
